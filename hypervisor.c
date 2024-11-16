@@ -35,15 +35,16 @@ void printConnectionDetails(virConnectPtr conn) {
 }
 
 // List active domains
-void listActiveDomains(virConnectPtr conn) {
+void listActiveDomainsJSON(virConnectPtr conn) {
     int numActiveDomains = virConnectNumOfDomains(conn);
     int *activeDomains = malloc(sizeof(int) * numActiveDomains);
 
     numActiveDomains = virConnectListDomains(conn, activeDomains, numActiveDomains);
-    
+
+    printf("  \"active_domains\": [\n");
     for (int i = 0; i < numActiveDomains; ++i) {
         virDomainPtr domain = virDomainLookupByID(conn, activeDomains[i]);
-        
+
         if (domain != NULL) {
             virDomainInfo info;
             virDomainGetInfo(domain, &info);
@@ -62,23 +63,26 @@ void listActiveDomains(virConnectPtr conn) {
             virDomainFree(domain);
         }
     }
+    printf("  ],\n");
 
     free(activeDomains);
 }
 
 // List inactive domains
-void listInactiveDomains(virConnectPtr conn) {
+void listInactiveDomainsJSON(virConnectPtr conn) {
     int numInactiveDomains = virConnectNumOfDefinedDomains(conn);
     char **inactiveDomains = malloc(sizeof(char *) * numInactiveDomains);
 
     numInactiveDomains = virConnectListDefinedDomains(conn, inactiveDomains, numInactiveDomains);
     
+    printf("  \"inactive_domains\": [\n");
     for (int i = 0; i < numInactiveDomains; ++i) {
         printf("    {\n");
         printf("      \"name\": \"%s\"\n", inactiveDomains[i]);
         printf("    }%s\n", i < numInactiveDomains - 1 ? "," : "");
         free(inactiveDomains[i]);
     }
+    printf("  ]\n");
 
     free(inactiveDomains);
 }
@@ -156,6 +160,7 @@ int restoreDomainState(virConnectPtr conn, const char *vmName) {
     return 0;
 }
 
+// Main program
 int main(int argc, char *argv[]) {
     if (argc != 3) {
         fprintf(stderr, "Usage: %s <remote-host> <option>\n", argv[0]);
@@ -172,15 +177,8 @@ int main(int argc, char *argv[]) {
     printf("{\n");
 
     if (strcmp(option, "l") == 0) {
-        printf("  \"connection_details\": {\n");
-        printConnectionDetails(conn);
-        printf("  },\n");
-        printf("  \"active_domains\": [\n");
-        listActiveDomains(conn);
-        printf("  ],\n");
-        printf("  \"inactive_domains\": [\n");
-        listInactiveDomains(conn);
-        printf("  ]\n");
+        listActiveDomainsJSON(conn);
+        listInactiveDomainsJSON(conn);
     } else if (strcmp(option, "c") == 0) {
         char vmName[256];
         printf("  \"action\": \"start\",\n");
