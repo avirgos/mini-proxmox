@@ -2,59 +2,60 @@
 session_start();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (isset($_POST['remote_host']) && isset($_POST['password'])) {
+    if (isset($_POST['remote_host'])) {
         $remoteHost = $_POST['remote_host'];
-        $password = $_POST['password'];
 
-        // Validation des entrées utilisateur
+        // vérification du $remoteHost saisi par l'utilisateur
         if (!preg_match('/^[^@]+@[^@]+$/', $remoteHost)) {
-            echo "Erreur : Veuillez entrer un hôte distant valide (ex : utilisateur@machine).";
+            echo "Erreur : Veuillez entrer un hôte distant valide (<em>Ex. : utilisateur@machine</em>).";
             exit;
         }
 
-        // Échapper les entrées pour éviter les injections
         $escapedHost = escapeshellarg($remoteHost);
-        $escapedPassword = escapeshellarg($password);
 
-        // Commande pour vérifier la connexion
-        $command = "sshpass -p $escapedPassword ./hypervisor $escapedHost SSH";
-
+	// commande pour établir la connexion SSH vers l'hyperviseur
+	$command = "./hypervisor $escapedHost SSH";
+		
+	// configuration des descripteurs de processus pour récupérer la sortie
         $descriptorSpec = [
             0 => ["pipe", "r"],  // stdin
             1 => ["pipe", "w"],  // stdout
             2 => ["pipe", "w"],  // stderr
         ];
+
+        // lancement du processus concernant la connexion SSH vers l'hyperviseur
         $process = proc_open($command, $descriptorSpec, $pipes);
 
         if (is_resource($process)) {
-            $output = stream_get_contents($pipes[1]);
+	    // stdin	
+	    $output = stream_get_contents($pipes[1]);
             fclose($pipes[1]);
 
+	    // stderr
             $error = stream_get_contents($pipes[2]);
             fclose($pipes[2]);
 
+            // fermeture du processus
             $exitCode = proc_close($process);
 
+	    // connexion réussie
             if (strpos($output, 'Connection successful') !== false) {
-                // Si la connexion réussit, stocker l'utilisateur en session
                 $_SESSION['authenticated'] = true;
                 $_SESSION['remote_host'] = $remoteHost;
 
-                // Redirection vers vm-manager.php
+                // rediriger vers la page vm_manager.php
                 header('Location: vm_manager.php');
                 exit;
             } else {
-                // Afficher un message d'erreur en cas d'échec
                 echo "Échec de la connexion : " . htmlspecialchars($error);
             }
         } else {
             echo "Erreur : Impossible d'exécuter la commande.";
         }
     } else {
-        echo "Erreur : Veuillez fournir toutes les informations nécessaires.";
+        echo "Erreur : Veuillez fournir l'hôte distant.";
     }
 } else {
-    // Afficher le formulaire de connexion
     ?>
     <!DOCTYPE html>
     <html lang="fr">
@@ -68,9 +69,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <form action="index.php" method="post">
             <label for="remote_host">Hôte distant (<em>Ex. : utilisateur@machine</em>) :</label>
             <input type="text" id="remote_host" name="remote_host" placeholder="utilisateur@machine" required><br><br>
-
-            <label for="password">Mot de passe :</label>
-            <input type="password" id="password" name="password" required><br><br>
 
             <input type="submit" value="Connecter">
         </form>

@@ -1,24 +1,23 @@
 <?php
 session_start();
 
-// Vérification si l'utilisateur est authentifié
+// vérification si l'utilisateur est authentifié
 if (!isset($_SESSION['authenticated']) || $_SESSION['authenticated'] !== true) {
-    // Redirection vers la page de connexion si non authentifié
+    // redirection vers la page de connexion si non authentifié
     header('Location: index.php');
     exit;
 }
 
-// Gestion de la déconnexion
+// gestion de la déconnexion
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logout'])) {
-    // Détruire la session
+    // détruire la session
     session_unset();
     session_destroy();
 
-    // Redirection vers la page de connexion
+    // redirection vers la page de connexion
     header('Location: index.php');
     exit;
 }
-
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -29,15 +28,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logout'])) {
 </head>
 <body>
     <h1>Bienvenue sur le gestionnaire de VM</h1>
-    <p>Connecté en tant que : <strong><?php echo htmlspecialchars($_SESSION['remote_host']); ?></strong></p>
+    <p>Connecté en tant que : <strong><?php echo htmlspecialchars($remoteHost); ?></strong></p>
 
-    <!-- Bouton de déconnexion -->
     <form method="post">
         <input type="hidden" name="logout" value="1">
         <button type="submit">Se déconnecter</button>
     </form>
 
-    <!-- Contenu principal -->
-    <p>Gérez vos machines virtuelles depuis cette page.</p>
+    <h2>Liste des VMs</h2>
 </body>
 </html>
