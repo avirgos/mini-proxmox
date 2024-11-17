@@ -70,7 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <label for="remote_host">Hôte distant (<em>Ex. : utilisateur@machine</em>) :</label>
             <input type="text" id="remote_host" name="remote_host" placeholder="utilisateur@machine" required><br><br>
 
-            <input type="submit" value="Connecter">
+            <input type="submit" value="Se connecter">
         </form>
     </body>
     </html>

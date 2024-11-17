@@ -162,13 +162,19 @@ int restoreDomainState(virConnectPtr conn, const char *vmName) {
 
 // Main program
 int main(int argc, char *argv[]) {
-    if (argc != 3) {
-        fprintf(stderr, "Usage: %s <remote-host> <option>\n", argv[0]);
+    if (argc < 3 || argc > 4) {
+        fprintf(stderr, "Usage: %s <remote-host> <option> [<vm-name>]\n", argv[0]);
         return 1;
     }
 
     const char *remoteHost = argv[1];
     const char *option = argv[2];
+    const char *vmName = NULL;
+
+    if (argc == 4) {
+        vmName = argv[3];
+    }
+
 
     virConnectPtr conn = connectToHypervisor(remoteHost);
     if (conn == NULL)
@@ -180,14 +186,28 @@ int main(int argc, char *argv[]) {
         listActiveDomainsJSON(conn);
         listInactiveDomainsJSON(conn);
     } else if (strcmp(option, "c") == 0) {
-        char vmName[256];
+        if (strcmp(option, "c") == 0) {
+        if (!vmName) {
+            // Pas de nom fourni, demander via stdin
+            char inputName[256];
+            printf("Enter the VM name: ");
+            fflush(stdout);
+            fgets(inputName, sizeof(inputName), stdin);
+            inputName[strcspn(inputName, "\n")] = 0; // Remove newline character
+            vmName = inputName;
+        }
+
+        printf("{\n");
         printf("  \"action\": \"start\",\n");
-        printf("  \"vm_name\": \"");
-        fflush(stdout);
-        fgets(vmName, sizeof(vmName), stdin);
-        vmName[strcspn(vmName, "\n")] = 0;
-        printf("%s\",\n", vmName);
-        printf("  \"result\": %d\n", startDomain(conn, vmName));
+        printf("  \"vm_name\": \"%s\",\n", vmName);
+        int result = startDomain(conn, vmName);
+        printf("  \"result\": %d\n", result);
+        printf("}\n");
+    } else {
+        printf("{\n");
+        printf("  \"error\": \"Unknown option: %s\"\n", option);
+        printf("}\n");
+    }
     } else if (strcmp(option, "d") == 0) {
         char vmName[256];
         printf("  \"action\": \"stop\",\n");

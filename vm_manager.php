@@ -15,6 +15,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logout'])) {
     exit;
 }
 
+// Exécution du programme avec l'option "c"
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['start_vm'])) {
+    $vmName = escapeshellarg($_POST['vm_name']);
+    $remoteHost = escapeshellarg($_SESSION['remote_host']);
+
+    // Commande complète avec le nom de la VM
+    $command = "./hypervisor $remoteHost c $vmName";
+    $output = shell_exec($command);
+
+    // Vérifier et afficher la sortie du programme
+    if ($output) {
+        echo "<p>Commande exécutée : $output</p>";
+    } else {
+        echo "<p>Échec de l'exécution de la commande pour la VM $vmName.</p>";
+    }
+    // Redirection pour éviter le rechargement de POST
+    header("Location: " . $_SERVER['PHP_SELF']);
+    exit;
+}
+
+
 // Lister les VMs
 function getActiveAndInactiveDomains($remoteHost) {
     $command = "./hypervisor $remoteHost l";
@@ -32,9 +53,9 @@ function getActiveAndInactiveDomains($remoteHost) {
         return null;
     }
 }
-
 $domains = getActiveAndInactiveDomains($_SESSION['remote_host']);
 ?>
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -59,10 +80,11 @@ $domains = getActiveAndInactiveDomains($_SESSION['remote_host']);
                 <th>Statut de la VM</th>
                 <th>ID</th>
                 <th>Etat</th>
-                <th>Mémoire maximale (Mo)</th>
-                <th>Mémoire actuelle (Mo)</th>
+                <th>Mémoire maximale (Gbits)</th>
+                <th>Mémoire actuelle (Gbits)</th>
                 <th>Nombre de vCPUs</th>
                 <th>Temps CPU</th>
+                <th>Action</th> <!-- Nouvelle colonne -->
             </tr>
         </thead>
         <tbody>
@@ -75,10 +97,16 @@ $domains = getActiveAndInactiveDomains($_SESSION['remote_host']);
                         <td>Active</td>
                         <td><?php echo htmlspecialchars($domain["id"]); ?></td>
                         <td><?php echo htmlspecialchars($domain["state"]); ?></td>
-                        <td><?php echo htmlspecialchars($domain["maxMem"] / 1024 / 1024); ?> Mo</td>
-                        <td><?php echo htmlspecialchars($domain["memory"] / 1024 / 1024) ?> Mo</td>
+                        <td><?php echo htmlspecialchars($domain["maxMem"] / 1024 / 1024); ?> Gbits</td>
+                        <td><?php echo htmlspecialchars($domain["memory"] / 1024 / 1024); ?> Gbits</td>
                         <td><?php echo htmlspecialchars($domain["nrVirtCpu"]); ?></td>
                         <td><?php echo htmlspecialchars($domain["cpuTime"]); ?></td>
+                        <td>
+                            <form method="post" style="display:inline;">
+                                <input type="hidden" name="vm_name" value="<?php echo htmlspecialchars($domain["name"]); ?>">
+                                <button type="submit" name="start_vm">Démarrer</button>
+                            </form>
+                        </td>
                     </tr>
                 <?php endforeach;
             endif; ?>
@@ -91,6 +119,12 @@ $domains = getActiveAndInactiveDomains($_SESSION['remote_host']);
                         <td><?php echo htmlspecialchars($domain["name"]); ?></td>
                         <td>Inactive</td>
                         <td colspan="6">N/A</td>
+                        <td>
+                            <form method="post" style="display:inline;">
+                                <input type="hidden" name="vm_name" value="<?php echo htmlspecialchars($domain["name"]); ?>">
+                                <button type="submit" name="start_vm">Démarrer</button>
+                            </form>
+                        </td>
                     </tr>
                 <?php endforeach;
             endif; ?>
@@ -98,3 +132,4 @@ $domains = getActiveAndInactiveDomains($_SESSION['remote_host']);
     </table>
 </body>
 </html>
+
