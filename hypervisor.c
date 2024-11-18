@@ -207,16 +207,26 @@ int main(int argc, char *argv[]) {
         printf("{\n");
         printf("  \"error\": \"Unknown option: %s\"\n", option);
         printf("}\n");
-    }
+        }
     } else if (strcmp(option, "d") == 0) {
-        char vmName[256];
+        if (strcmp(option, "d") == 0) {
+        if (!vmName) {
+            // Pas de nom fourni, demander via stdin
+            char inputName[256];
+            printf("Enter the VM name: ");
+            fflush(stdout);
+            fgets(inputName, sizeof(inputName), stdin);
+            inputName[strcspn(inputName, "\n")] = 0; // Remove newline character
+            vmName = inputName;
+        }
+
+        printf("{\n");
         printf("  \"action\": \"stop\",\n");
-        printf("  \"vm_name\": \"");
-        fflush(stdout);
-        fgets(vmName, sizeof(vmName), stdin);
-        vmName[strcspn(vmName, "\n")] = 0;
-        printf("%s\",\n", vmName);
-        printf("  \"result\": %d\n", stopDomain(conn, vmName));
+        printf("  \"vm_name\": \"%s\",\n", vmName);
+        int result = stopDomain(conn, vmName);
+        printf("  \"result\": %d\n", result);
+        printf("}\n");
+        }
     } else if (strcmp(option, "s") == 0) {
         char vmName[256];
         printf("  \"action\": \"save\",\n");

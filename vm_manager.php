@@ -35,6 +35,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['start_vm'])) {
     exit;
 }
 
+// Exécution du programme avec l'option "d"
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['stop_vm'])) {
+    $vmName = escapeshellarg($_POST['vm_name']);
+    $remoteHost = escapeshellarg($_SESSION['remote_host']);
+
+    // Commande complète avec le nom de la VM
+    $command = "./hypervisor $remoteHost d $vmName";
+    $output = shell_exec($command);
+
+    // Vérifier et afficher la sortie du programme
+    if ($output) {
+        echo "<p>Commande exécutée : $output</p>";
+    } else {
+        echo "<p>Échec de l'exécution de la commande pour la VM $vmName.</p>";
+    }
+    // Redirection pour éviter le rechargement de POST
+    header("Location: " . $_SERVER['PHP_SELF']);
+    exit;
+}
 
 // Lister les VMs
 function getActiveAndInactiveDomains($remoteHost) {
@@ -84,7 +103,8 @@ $domains = getActiveAndInactiveDomains($_SESSION['remote_host']);
                 <th>Mémoire actuelle (Gbits)</th>
                 <th>Nombre de vCPUs</th>
                 <th>Temps CPU</th>
-                <th>Action</th> <!-- Nouvelle colonne -->
+                <th>Action</th>
+                <th>Action2</th>
             </tr>
         </thead>
         <tbody>
@@ -105,6 +125,12 @@ $domains = getActiveAndInactiveDomains($_SESSION['remote_host']);
                             <form method="post" style="display:inline;">
                                 <input type="hidden" name="vm_name" value="<?php echo htmlspecialchars($domain["name"]); ?>">
                                 <button type="submit" name="start_vm">Démarrer</button>
+                            </form>
+                        </td>
+                        <td>
+                            <form method="post" style="display:inline;">
+                                <input type="hidden" name="vm_name" value="<?php echo htmlspecialchars($domain["name"]); ?>">
+                                <button type="submit" name="stop_vm">Stopper</button>
                             </form>
                         </td>
                     </tr>
