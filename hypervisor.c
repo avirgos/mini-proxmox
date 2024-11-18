@@ -186,7 +186,6 @@ int main(int argc, char *argv[]) {
         listActiveDomainsJSON(conn);
         listInactiveDomainsJSON(conn);
     } else if (strcmp(option, "c") == 0) {
-        if (strcmp(option, "c") == 0) {
         if (!vmName) {
             // Pas de nom fourni, demander via stdin
             char inputName[256];
@@ -194,7 +193,7 @@ int main(int argc, char *argv[]) {
             fflush(stdout);
             fgets(inputName, sizeof(inputName), stdin);
             inputName[strcspn(inputName, "\n")] = 0; // Remove newline character
-            vmName = inputName;
+            vmName = strdup(inputName); // Allocate memory for vmName
         }
 
         printf("{\n");
@@ -203,13 +202,11 @@ int main(int argc, char *argv[]) {
         int result = startDomain(conn, vmName);
         printf("  \"result\": %d\n", result);
         printf("}\n");
-    } else {
-        printf("{\n");
-        printf("  \"error\": \"Unknown option: %s\"\n", option);
-        printf("}\n");
-        }
+    
+	if (!argv[3]) {
+	    free((void *) vmName);
+	}
     } else if (strcmp(option, "d") == 0) {
-        if (strcmp(option, "d") == 0) {
         if (!vmName) {
             // Pas de nom fourni, demander via stdin
             char inputName[256];
@@ -217,7 +214,8 @@ int main(int argc, char *argv[]) {
             fflush(stdout);
             fgets(inputName, sizeof(inputName), stdin);
             inputName[strcspn(inputName, "\n")] = 0; // Remove newline character
-            vmName = inputName;
+            
+	    vmName = strdup(inputName); // Allocate memory for vmName
         }
 
         printf("{\n");
@@ -226,7 +224,10 @@ int main(int argc, char *argv[]) {
         int result = stopDomain(conn, vmName);
         printf("  \"result\": %d\n", result);
         printf("}\n");
-        }
+
+	if (!argv[3]) {
+            free((void *) vmName);
+	}
     } else if (strcmp(option, "s") == 0) {
         char vmName[256];
         printf("  \"action\": \"save\",\n");

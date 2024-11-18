@@ -72,7 +72,25 @@ function getActiveAndInactiveDomains($remoteHost) {
         return null;
     }
 }
+
+// Fonction de tri alphabétique
+function sortDomainsAlphabetically(&$domains, $key = 'name') {
+    usort($domains, function ($a, $b) use ($key) {
+        return strcasecmp($a[$key], $b[$key]);
+    });
+}
+
 $domains = getActiveAndInactiveDomains($_SESSION['remote_host']);
+
+// Trier les domaines actifs
+if (isset($domains['active_domains']) && is_array($domains['active_domains'])) {
+    sortDomainsAlphabetically($domains['active_domains']);
+}
+
+// Trier les domaines inactifs
+if (isset($domains['inactive_domains']) && is_array($domains['inactive_domains'])) {
+    sortDomainsAlphabetically($domains['inactive_domains']);
+}
 ?>
 
 <!DOCTYPE html>
@@ -103,8 +121,7 @@ $domains = getActiveAndInactiveDomains($_SESSION['remote_host']);
                 <th>Mémoire actuelle (Gbits)</th>
                 <th>Nombre de vCPUs</th>
                 <th>Temps CPU</th>
-                <th>Action</th>
-                <th>Action2</th>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -126,8 +143,6 @@ $domains = getActiveAndInactiveDomains($_SESSION['remote_host']);
                                 <input type="hidden" name="vm_name" value="<?php echo htmlspecialchars($domain["name"]); ?>">
                                 <button type="submit" name="start_vm">Démarrer</button>
                             </form>
-                        </td>
-                        <td>
                             <form method="post" style="display:inline;">
                                 <input type="hidden" name="vm_name" value="<?php echo htmlspecialchars($domain["name"]); ?>">
                                 <button type="submit" name="stop_vm">Stopper</button>
@@ -158,4 +173,3 @@ $domains = getActiveAndInactiveDomains($_SESSION['remote_host']);
     </table>
 </body>
 </html>
-

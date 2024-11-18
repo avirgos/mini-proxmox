@@ -37,3 +37,5 @@ ssh-copy-id -i ~/.ssh/id_ed25519.pub <utilisateur>@<machine>
 ```bash
 ./deploy.sh
 ```
+
+Accédez à l'application depuis l'URL suivante : http://localhost:8000.
