@@ -99,7 +99,8 @@ int startDomain(virConnectPtr conn, const char *vmName) {
         virDomainFree(dom);
         return -1;
     }
-    fprintf(stderr, "Guest is now running\n");
+
+    fprintf(stdout, "	\"message\": \"La VM \\\"%s\\\" est démarrée.\",\n", vmName);
     virDomainFree(dom);
     return 0;
 }
@@ -116,7 +117,8 @@ int stopDomain(virConnectPtr conn, const char *vmName) {
         virDomainFree(dom);
         return -1;
     }
-    fprintf(stderr, "Guest is now stopped\n");
+
+    fprintf(stdout, "   \"message\": \"La VM \\\"%s\\\" est stoppée.\",\n", vmName);
     virDomainFree(dom);
     return 0;
 }
@@ -139,7 +141,8 @@ int saveDomainState(virConnectPtr conn, const char *vmName) {
         virDomainFree(dom);
         return -1;
     }
-    fprintf(stderr, "Guest state saved to %s\n", filename);
+    
+    fprintf(stdout, "	\"message\": \"VM sauvegardée dans \\\"%s\\\".\",\n", filename);
     virDomainFree(dom);
     return 0;
 }
@@ -156,7 +159,7 @@ int restoreDomainState(virConnectPtr conn, const char *vmName) {
         return -1;
     }
 
-    fprintf(stderr, "Guest state restored from %s\n", filename);
+    fprintf(stdout, "Guest state restored from %s\n", filename);
     return 0;
 }
 
@@ -196,12 +199,10 @@ int main(int argc, char *argv[]) {
             vmName = strdup(inputName); // Allocate memory for vmName
         }
 
-        printf("{\n");
         printf("  \"action\": \"start\",\n");
         printf("  \"vm_name\": \"%s\",\n", vmName);
         int result = startDomain(conn, vmName);
         printf("  \"result\": %d\n", result);
-        printf("}\n");
     
 	if (!argv[3]) {
 	    free((void *) vmName);
@@ -218,25 +219,34 @@ int main(int argc, char *argv[]) {
 	    vmName = strdup(inputName); // Allocate memory for vmName
         }
 
-        printf("{\n");
         printf("  \"action\": \"stop\",\n");
         printf("  \"vm_name\": \"%s\",\n", vmName);
         int result = stopDomain(conn, vmName);
         printf("  \"result\": %d\n", result);
-        printf("}\n");
 
 	if (!argv[3]) {
             free((void *) vmName);
 	}
     } else if (strcmp(option, "s") == 0) {
-        char vmName[256];
+        if (!vmName) {
+            // Pas de nom fourni, demander via stdin
+            char inputName[256];
+            printf("Enter the VM name: ");
+            fflush(stdout);
+            fgets(inputName, sizeof(inputName), stdin);
+            inputName[strcspn(inputName, "\n")] = 0; // Remove newline character
+            
+	    vmName = strdup(inputName); // Allocate memory for vmName
+        }
+
         printf("  \"action\": \"save\",\n");
-        printf("  \"vm_name\": \"");
-        fflush(stdout);
-        fgets(vmName, sizeof(vmName), stdin);
-        vmName[strcspn(vmName, "\n")] = 0;
-        printf("%s\",\n", vmName);
-        printf("  \"result\": %d\n", saveDomainState(conn, vmName));
+        printf("  \"vm_name\": \"%s\",\n", vmName);
+        int result = saveDomainState(conn, vmName);
+        printf("  \"result\": %d\n", result);
+
+	if (!argv[3]) {
+            free((void *) vmName);
+	}   
     } else if (strcmp(option, "r") == 0) {
         char vmName[256];
         printf("  \"action\": \"restore\",\n");
