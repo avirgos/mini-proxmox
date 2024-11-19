@@ -151,6 +151,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_vm'])) {
     }
 }
 
+// Exécution du programme avec l'option "r" [Restorer]
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['restore_vm'])) {
+    $vmName = escapeshellarg($_POST['vm_name']);
+    $remoteHost = escapeshellarg($_SESSION['remote_host']);
+    
+    // Commande complète avec le nom de la VM
+    $command = "./hypervisor $remoteHost r $vmName";
+    
+    $descriptorSpec = [
+        0 => ["pipe", "r"],  // stdin
+        1 => ["pipe", "w"],  // stdout
+        2 => ["pipe", "w"],  // stderr
+    ];
+
+    // lancement du processus concernant la restoration de la VM
+    $process = proc_open($command, $descriptorSpec, $pipes);
+    
+    if (is_resource($process)) {
+        // stdin	
+	$output = stream_get_contents($pipes[1]);
+        fclose($pipes[1]);
+
+	// stderr
+        $error = stream_get_contents($pipes[2]);
+        fclose($pipes[2]);
+
+        // fermeture du processus
+        $exitCode = proc_close($process);
+
+	// sauvegarde réussie
+        if (strpos($output, "est restorée") !== false) {
+	    // utilisation d'une expression régulière pour extraire la portion JSON
+    	    if (preg_match('/\{.*\}/s', $output, $matches)) {
+        	$jsonOutput = $matches[0];	
+		$result = json_decode($jsonOutput, true);
+
+		$successMessage = "{$result['message']}";
+	    }
+    	} else {
+            $errorMessage = "Échec de l'exécution de la commande de restoration pour la VM $vmName.";
+	}
+    }
+}
+
 // Lister les VMs
 function getActiveAndInactiveDomains($remoteHost) {
     $command = "./hypervisor $remoteHost l";
@@ -290,6 +334,10 @@ sortDomainsAlphabetically($domains['inactive_domains']);
                             <form method="post" style="display:inline;">
                                 <input type="hidden" name="vm_name" value="<?php echo htmlspecialchars($domain["name"]); ?>">
                                 <button type="submit" name="start_vm">Démarrer</button>
+			    </form>
+			    <form method="post" style="display:inline;">
+                                <input type="hidden" name="vm_name" value="<?php echo htmlspecialchars($domain["name"]); ?>">
+                                <button type="submit" name="restore_vm">Restorer</button>
                             </form>
                         </td>
                     </tr>
