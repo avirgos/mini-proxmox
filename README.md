@@ -2,20 +2,20 @@
 
 ## Prérequis
 
-- Paquets `php` requis
+- Paquets `php`, `openssh-server` requis
 
 Debian :
 
 ```sh
 sudo apt-get update
-sudo apt-get install php -y
+sudo apt-get install php openssh-server -y
 ```
 
 RHEL/CentOS :
 
 ```sh
 sudo dnf update
-sudo dnf install php -y
+sudo dnf install php openssh-server -y
 ```
 
 - Disposer d'une clé SSH
