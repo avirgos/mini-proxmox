@@ -1,13 +1,11 @@
 <?php
 session_start();
 
-// vérification si l'utilisateur est authentifié
 if (!isset($_SESSION['authenticated']) || $_SESSION['authenticated'] !== true) {
     header('Location: index.php');
     exit;
 }
 
-// gestion de la déconnexion
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logout'])) {
     session_unset();
     session_destroy();
@@ -15,205 +13,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logout'])) {
     exit;
 }
 
-$successMessage = ""; // messages de succès
-$errorMessage = ""; // messages d'erreur
-$infoMessage = ""; // messages d'information
+$successMessage = "";
+$errorMessage = "";
+$infoMessage = "";
 
-// Exécution du programme avec l'option "c" [Démarrer]
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['start_vm'])) {
-    $vmName = escapeshellarg($_POST['vm_name']);
-    $remoteHost = escapeshellarg($_SESSION['remote_host']);
-
-    // Commande complète avec le nom de la VM
-    $command = "./hypervisor $remoteHost c $vmName";
-    
-    $descriptorSpec = [
-        0 => ["pipe", "r"],  // stdin
-        1 => ["pipe", "w"],  // stdout
-        2 => ["pipe", "w"],  // stderr
-    ];
-
-    // lancement du processus concernant le démarrage de la VM
-    $process = proc_open($command, $descriptorSpec, $pipes);
-
-    if (is_resource($process)) {
-        // stdin	
-	$output = stream_get_contents($pipes[1]);
-        fclose($pipes[1]);
-
-	// stderr
-        $error = stream_get_contents($pipes[2]);
-        fclose($pipes[2]);
-
-        // fermeture du processus
-        $exitCode = proc_close($process);
-
-	// démarrage réussi
-	if ($exitCode === 0) {
-	    // utilisation d'une expression régulière pour extraire la portion JSON
-    	    if (preg_match('/\{.*\}/s', $output, $matches)) {
-		$jsonOutput = $matches[0];
-		$result = json_decode($jsonOutput, true);
-		
-		$infoMessage = "{$result['message']}";
-	    }
-    	} else {
-            $errorMessage = "Échec de l'exécution de la commande de démarrage pour la VM $vmName.";
-	}
+function executeHypervisorCommand($remoteHost, $option, $vmName = null) {
+    $command = "./hypervisor " . escapeshellarg($remoteHost) . " $option";
+    if ($vmName) {
+        $command .= " " . escapeshellarg($vmName);
     }
-}
 
-// Exécution du programme avec l'option "d"
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['stop_vm'])) {
-    $vmName = escapeshellarg($_POST['vm_name']);
-    $remoteHost = escapeshellarg($_SESSION['remote_host']);
-
-    // Commande complète avec le nom de la VM
-    $command = "./hypervisor $remoteHost d $vmName";
-    
-    $descriptorSpec = [
-        0 => ["pipe", "r"],  // stdin
-        1 => ["pipe", "w"],  // stdout
-        2 => ["pipe", "w"],  // stderr
-    ];
-
-    // lancement du processus concernant l'arrêt de la VM
-    $process = proc_open($command, $descriptorSpec, $pipes);
-
-    if (is_resource($process)) {
-        // stdin	
-	$output = stream_get_contents($pipes[1]);
-        fclose($pipes[1]);
-
-	// stderr
-        $error = stream_get_contents($pipes[2]);
-        fclose($pipes[2]);
-
-        // fermeture du processus
-        $exitCode = proc_close($process);
-
-	// démarrage réussi
-	if ($exitCode === 0) {
-	    // utilisation d'une expression régulière pour extraire la portion JSON
-    	    if (preg_match('/\{.*\}/s', $output, $matches)) {
-		$jsonOutput = $matches[0];
-		$result = json_decode($jsonOutput, true);
-
-		$infoMessage = "{$result['message']}";
-	    }
-    	} else {
-            $errorMessage = "Échec de l'exécution de la commande d'arrêt pour la VM $vmName.";
-	}
-    }
-}
-
-// Exécution du programme avec l'option "s" [Sauvegarder]
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_vm'])) {
-    $vmName = escapeshellarg($_POST['vm_name']);
-    $remoteHost = escapeshellarg($_SESSION['remote_host']);
-    
-    // Commande complète avec le nom de la VM
-    $command = "./hypervisor $remoteHost s $vmName";
-    
-    $descriptorSpec = [
-        0 => ["pipe", "r"],  // stdin
-        1 => ["pipe", "w"],  // stdout
-        2 => ["pipe", "w"],  // stderr
-    ];
-
-    // lancement du processus concernant la sauvegarde de la VM
-    $process = proc_open($command, $descriptorSpec, $pipes);
-    
-    if (is_resource($process)) {
-        // stdin	
-	$output = stream_get_contents($pipes[1]);
-        fclose($pipes[1]);
-
-	// stderr
-        $error = stream_get_contents($pipes[2]);
-        fclose($pipes[2]);
-
-        // fermeture du processus
-        $exitCode = proc_close($process);
-
-	// sauvegarde réussie
-        if (strpos($output, "VM sauvegardée") !== false) {
-	    // utilisation d'une expression régulière pour extraire la portion JSON
-    	    if (preg_match('/\{.*\}/s', $output, $matches)) {
-        	$jsonOutput = $matches[0];	
-		$result = json_decode($jsonOutput, true);
-
-		$successMessage = "{$result['message']}";
-	    }
-    	} else {
-            $errorMessage = "Échec de l'exécution de la commande de sauvegarde pour la VM $vmName.";
-	}
-    }
-}
-
-// Exécution du programme avec l'option "r" [Restorer]
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['restore_vm'])) {
-    $vmName = escapeshellarg($_POST['vm_name']);
-    $remoteHost = escapeshellarg($_SESSION['remote_host']);
-    
-    // Commande complète avec le nom de la VM
-    $command = "./hypervisor $remoteHost r $vmName";
-    
-    $descriptorSpec = [
-        0 => ["pipe", "r"],  // stdin
-        1 => ["pipe", "w"],  // stdout
-        2 => ["pipe", "w"],  // stderr
-    ];
-
-    // lancement du processus concernant la restoration de la VM
-    $process = proc_open($command, $descriptorSpec, $pipes);
-    
-    if (is_resource($process)) {
-        // stdin	
-	$output = stream_get_contents($pipes[1]);
-        fclose($pipes[1]);
-
-	// stderr
-        $error = stream_get_contents($pipes[2]);
-        fclose($pipes[2]);
-
-        // fermeture du processus
-        $exitCode = proc_close($process);
-
-	// sauvegarde réussie
-        if (strpos($output, "est restorée") !== false) {
-	    // utilisation d'une expression régulière pour extraire la portion JSON
-    	    if (preg_match('/\{.*\}/s', $output, $matches)) {
-        	$jsonOutput = $matches[0];	
-		$result = json_decode($jsonOutput, true);
-
-		$successMessage = "{$result['message']}";
-	    }
-    	} else {
-            $errorMessage = "Échec de l'exécution de la commande de restoration pour la VM $vmName.";
-	}
-    }
-}
-
-// Lister les VMs
-function getActiveAndInactiveDomains($remoteHost) {
-    $command = "./hypervisor $remoteHost l";
     $output = shell_exec($command);
-
-    // utilisation d'une expression régulière pour extraire la portion JSON
     if (preg_match('/\{.*\}/s', $output, $matches)) {
-        $jsonOutput = $matches[0];
+        return json_decode($matches[0], true);
+    }
+    return null;
+}
 
-        $domains = json_decode($jsonOutput, true);
-        
-        return $domains;
+function handleVMAction($action, $vmName) {
+    global $successMessage, $errorMessage, $infoMessage;
+    $result = executeHypervisorCommand($_SESSION['remote_host'], $action, $vmName);
+    if ($result && isset($result['message'])) {
+        $infoMessage = $result['message'];
     } else {
-        $errorMessage = "Aucune donnée JSON valide trouvée dans la sortie.\n";
-        return null;
+        $errorMessage = "Échec de l'exécution de la commande pour la VM $vmName.";
     }
 }
 
-// Fonction de tri alphabétique
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (isset($_POST['start_vm'])) {
+        handleVMAction('c', $_POST['vm_name']);
+    } elseif (isset($_POST['stop_vm'])) {
+        handleVMAction('d', $_POST['vm_name']);
+    } elseif (isset($_POST['save_vm'])) {
+        handleVMAction('s', $_POST['vm_name']);
+    } elseif (isset($_POST['restore_vm'])) {
+        handleVMAction('r', $_POST['vm_name']);
+    }
+}
+
+function getActiveAndInactiveDomains($remoteHost) {
+    $command = "./hypervisor " . escapeshellarg($remoteHost) . " l";
+    $output = shell_exec($command);
+    if (preg_match('/\{.*\}/s', $output, $matches)) {
+        return json_decode($matches[0], true);
+    }
+    return null;
+}
+
 function sortDomainsAlphabetically(&$domains, $key = 'name') {
     usort($domains, function ($a, $b) use ($key) {
         return strcasecmp($a[$key], $b[$key]);
@@ -221,8 +68,10 @@ function sortDomainsAlphabetically(&$domains, $key = 'name') {
 }
 
 $domains = getActiveAndInactiveDomains($_SESSION['remote_host']);
-sortDomainsAlphabetically($domains['active_domains']);
-sortDomainsAlphabetically($domains['inactive_domains']);
+if ($domains) {
+    sortDomainsAlphabetically($domains['active_domains']);
+    sortDomainsAlphabetically($domains['inactive_domains']);
+}
 ?>
 
 <!DOCTYPE html>
@@ -316,7 +165,7 @@ sortDomainsAlphabetically($domains['inactive_domains']);
 			    <form method="post" style="display:inline;">
                                 <input type="hidden" name="vm_name" value="<?php echo htmlspecialchars($domain["name"]); ?>">
                                 <button type="submit" name="save_vm">Sauvegarder</button>
-                            </form> 
+                            </form>
                         </td>
                     </tr>
                 <?php endforeach;
